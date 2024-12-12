@@ -17,7 +17,7 @@ def distance_route(route):
     return total_distance
 
 
-def read_file(file="eil51.tsp.txt"):
+def read_file(file="a280.tsp.txt"):
     folder= "TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
@@ -117,32 +117,33 @@ plt.plot(route[:,1], route[:,2], 'o-')
 plt.show()
 print(distance_route(route))
 
-route = two_opt_improvement(route)
-print(distance_route(route))
-plt.plot(route[:,1], route[:,2], 'o-')
-plt.show()
-print(route)
+# route = two_opt_improvement(route)
+# print(distance_route(route))
+# plt.plot(route[:,1], route[:,2], 'o-')
+# plt.show()
+# print(route)
 
 
 
 def get_optimum(route):
     # read eil51.opt.tour.txt
     folder= "TSP-Configurations/"
-    file = open(folder + "eil51.opt.tour.txt", "r")
+    file = open(folder + "a280.opt.tour.txt", "r")
     lines = file.readlines()
     file.close()
-    lines = lines[5:-2]
+    lines = lines[4:-2]
     lines = [int(line) for line in lines]
 
     empty_list = [0] * len(lines)
     for item in route:
         city_number = item[0]
-        print(city_number)
+        # print(city_number)
         matching_index = lines.index(int(city_number))
-        print(matching_index)
+        # print(matching_index)
         empty_list[matching_index] = item
-        print(empty_list)
+        # print(empty_list)
     return empty_list
 
-# route_best = get_optimum(route)
-# print(distance_route(route_best))
+# print(route_best)
+route_best = get_optimum(route)
+print(distance_route(route_best))

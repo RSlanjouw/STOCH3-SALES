@@ -17,7 +17,7 @@ def distance_route(route):
     return total_distance
 
 
-def read_file(file="a280.tsp.txt"):
+def read_file(file="eil51.tsp.txt"):
     folder= "TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
@@ -69,7 +69,7 @@ def two_opt_algorithm(route):
     # new_route += [new_route[0]]
     return new_route
     
-def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=200000):
+def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=10000):
 
     current_route = route
     current_distance = distance_route(route)
@@ -92,17 +92,21 @@ def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations
 
         temperature *= cooling_rate
 
-        if iteration % 10000 == 0 or iteration == iterations - 1:
+        if iteration % 1000 == 0 or iteration == iterations - 1:
             print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
             #plt.plot(best_route[:, 1], best_route[:, 2], 'o-', label='Best Route')
             #plt.title(f"Iteration {iteration}")
             #plt.pause(0.01)
-    plt.show
+    plt.show()
     return best_route, best_distance
 
 # Main execution
 coordinates = read_file()
 initial_route = random_route(coordinates)
 
-best_route, best_distance = simulated_annealing(initial_route)
-print(f"Final Best Distance: {best_distance:.2f}")
+
+coolingrates = [0.995, 0.8, 0.6, 0.4]
+initial_route = random_route(coordinates)
+
+for x in range(100):
+    best_route, best_distance = simulated_annealing(initial_route)
