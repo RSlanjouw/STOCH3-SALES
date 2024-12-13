@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+
 def distance_two_nodes(node1, node2):
     x1, y1 = node1[1], node1[2]
     x2, y2 = node2[1], node2[2]
@@ -18,7 +19,7 @@ def distance_route(route):
 
 
 def read_file(file="eil51.tsp.txt"):
-    folder= "TSP-Configurations/"
+    folder= "C:/Users/rmosk/Dropbox/Rinske/Computational Science/Stochastic Simulation/STOCH3-SALES/TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
     file.close()
@@ -69,13 +70,15 @@ def two_opt_algorithm(route):
     # new_route += [new_route[0]]
     return new_route
     
-def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=10000):
+def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=20000, coolingsc = "lin"):
 
     current_route = route
     current_distance = distance_route(route)
     best_route = current_route
     best_distance = current_distance
     temperature = initial_temp
+    final_temp = 1
+    results = []
 
     for iteration in range(iterations):
         # Generate a neighboring solution using 2-opt
@@ -90,15 +93,24 @@ def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations
                 best_route = current_route
                 best_distance = current_distance
 
-        temperature *= cooling_rate
+        if coolingsc == "lin":
+            temperature = max(final_temp, temperature - cooling_rate * iteration)
+        if coolingsc == "exp":
+            temperature *= cooling_rate
+        if coolingsc == "log":
+            temperature = temperature / (1 + np.log(1 + iteration))
+
+        
+        
 
         if iteration % 1000 == 0 or iteration == iterations - 1:
-            print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
+            results.append(best_distance)
+            #print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
             #plt.plot(best_route[:, 1], best_route[:, 2], 'o-', label='Best Route')
             #plt.title(f"Iteration {iteration}")
             #plt.pause(0.01)
     plt.show()
-    return best_route, best_distance
+    return best_route, best_distance, results
 
 # Main execution
 coordinates = read_file()
@@ -108,5 +120,40 @@ initial_route = random_route(coordinates)
 coolingrates = [0.995, 0.8, 0.6, 0.4]
 initial_route = random_route(coordinates)
 
-for x in range(100):
-    best_route, best_distance = simulated_annealing(initial_route)
+cooling_schedules = ["lin", "exp", "log"]
+results = np.zeros((3,20,21))
+for j,c in enumerate(cooling_schedules):
+    for i in range(20):
+        best_route, best_distance, result = simulated_annealing(initial_route, coolingsc=c)
+        results[j,i] = result
+
+xs = np.linspace(0,20000, 21)
+
+for res in results[0]:
+    plt.plot(xs, res, color = 'red', alpha = 0.2 )
+
+for res in results[1]:
+    plt.plot(xs, res, color = 'blue', alpha = 0.2 )
+
+for res in results[2]:
+    plt.plot(xs, res, color = 'green', alpha = 0.2 )
+
+plt.plot([],[], label="linear cooling", color = 'red')
+plt.plot([],[],  label="exponential cooling", color = 'blue')
+plt.plot([],[], label="logaritmic cooling", color = 'green')
+
+
+plt.legend()
+plt.show()
+
+# mean_results_lin = [np.mean(lijst) for lijst in results[0]]
+# mean_results_exp = [np.mean(lijst) for lijst in results[1]]
+# mean_results_log = [np.mean(lijst) for lijst in results[2]]
+# print("lin:", mean_results_lin)
+# print("exp:", mean_results_lin)
+# print("log:", mean_results_lin)
+
+# best_route, best_distance = simulated_annealing(initial_route)
+
+# for x in range(100):
+#     best_route, best_distance = simulated_annealing(initial_route)
