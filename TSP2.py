@@ -18,8 +18,8 @@ def distance_route(route):
     return total_distance
 
 
-def read_file(file="eil51.tsp.txt"):
-    folder= "C:/Users/rmosk/Dropbox/Rinske/Computational Science/Stochastic Simulation/STOCH3-SALES/TSP-Configurations/"
+def read_file(file="a280.tsp.txt"):
+    folder= "TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
     file.close()
