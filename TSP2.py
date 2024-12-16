@@ -18,8 +18,8 @@ def distance_route(route):
     return total_distance
 
 
-def read_file(file="eil51.tsp.txt"):
-    folder= "C:/Users/rmosk/Dropbox/Rinske/Computational Science/Stochastic Simulation/STOCH3-SALES/TSP-Configurations/"
+def read_file(file="a280.tsp.txt"):
+    folder= "./TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
     file.close()
@@ -35,54 +35,48 @@ def random_route(coordinates):
     start = coordinates[0]
     end = coordinates[0]
     cities = coordinates[1:]
-    route = [start] + list(np.random.permutation(cities))
+    route = [start] + list(np.random.permutation(cities)) + [end]
     return np.array(route)
 
 
-def two_opt_algorithm(route):
-    new_route = route.copy() 
 
-    indices = np.arange(len(route))
-    i = np.random.choice(indices[1:-1])
-    j = i+1
-    # remove from indices
-    if i != 1 and i != len(route) - 2:
-        indices = np.delete(indices, [i-1,i,i+1, i+2])
-    elif i == 1:
-        indices = np.delete(indices, [i,i+1, i+2])
-    else:
-        indices = np.delete(indices, [i-1,i,i+1])
-    p = np.random.choice(indices[1:-1])
+def two_opt_alg(route):
+    new_route = route.copy()
+    n= len(route)
+    # Kies i willekeurig uit de mogelijke waarden: 1 tot n-3
+    i = np.random.choice(np.arange(1, n-2))
+
+    # j is altijd i + 1
+    j = i + 1
+
+    # p is altijd minstens j+1 en maximaal n-1
+    p = np.random.choice(np.arange(j+1, n))
+
+    # q is altijd p + 1
     q = p + 1
-    
-    tempj = new_route[j].copy()
-    tempp = new_route[p].copy()
 
-    # write i,p and j,q in the new route
-    new_route[j] = tempp
-    new_route[p] = tempj
-    # reverse the order of the cities between p and j or j and p
-    if p < j:
-        new_route[p+1:j] = route[p+1:j][::-1]
-    else:
-        new_route[j+1:p] = route[j+1:p][::-1]
-    
-    # new_route += [new_route[0]]
+    # to_swap = new_route[j:p].copy()
+    new_route[j:p] = new_route[j:p][::-1]
+    # Verwissel de volgorde van de steden
+
     return new_route
     
-def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=20000, coolingsc = "lin"):
+def simulated_annealing(route, initial_temp=10000, cooling_rate=0.995, iterations=100000, coolingsc = "lin", markov_chain_length=1, verbose=True):
 
     current_route = route
     current_distance = distance_route(route)
     best_route = current_route
     best_distance = current_distance
     temperature = initial_temp
+    minimum = False
     final_temp = 1
     results = []
+    step_size= initial_temp/ (cooling_rate * iterations)
+    temp = []
 
     for iteration in range(iterations):
         # Generate a neighboring solution using 2-opt
-        new_route = two_opt_algorithm(current_route)
+        new_route = two_opt_alg(current_route)
         new_distance = distance_route(new_route)
 
         if new_distance < current_distance or np.random.rand() < np.exp((current_distance - new_distance) / temperature):
@@ -93,67 +87,43 @@ def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations
                 best_route = current_route
                 best_distance = current_distance
 
-        if coolingsc == "lin":
-            temperature = max(final_temp, temperature - cooling_rate * iteration)
-        if coolingsc == "exp":
-            temperature *= cooling_rate
-        if coolingsc == "log":
-            temperature = temperature / (1 + np.log(1 + iteration))
-
-        
-        
+        if iteration % markov_chain_length == 0:
+            if coolingsc == "lin":
+                temperature = max(10**-7,temperature - step_size)
+            if coolingsc == "exp":
+                temperature = max(10**-7,temperature * cooling_rate)
+            if coolingsc == "log":
+                temperature = max(10**-7,temperature / (1 + np.log(1 + iteration)))
 
         if iteration % 1000 == 0 or iteration == iterations - 1:
             results.append(best_distance)
-            #print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
-            #plt.plot(best_route[:, 1], best_route[:, 2], 'o-', label='Best Route')
-            #plt.title(f"Iteration {iteration}")
-            #plt.pause(0.01)
-    plt.show()
-    return best_route, best_distance, results
+            temp.append(temperature)
+        if verbose and (iteration % 10000 == 0 and iteration != 0):
+            print(f"Iteration: {iteration}, Best distance: {best_distance}, Temperature: {temperature}")
+    return best_route, best_distance, results, temp
 
 # Main execution
 coordinates = read_file()
 initial_route = random_route(coordinates)
 
 
-coolingrates = [0.995, 0.8, 0.6, 0.4]
-initial_route = random_route(coordinates)
 
 cooling_schedules = ["lin", "exp", "log"]
-results = np.zeros((3,20,21))
-for j,c in enumerate(cooling_schedules):
-    for i in range(20):
-        best_route, best_distance, result = simulated_annealing(initial_route, coolingsc=c)
-        results[j,i] = result
+iterations = [1000, 10000]
+# calculate the 95% confidence interval for the mean over 10 runs for different amount of iterations
 
-xs = np.linspace(0,20000, 21)
+results = []
+for coolingsc in cooling_schedules:
+    for iteration in iterations:
+        distances = []
+        for i in range(10):
+            initial_route = random_route(coordinates)
+            best_route, best_distance, res, temp = simulated_annealing(initial_route, iterations=iteration, coolingsc=coolingsc)
+            distances.append(best_distance)
+        results.append([coolingsc, iteration, np.mean(distances), np.std(distances)/np.sqrt(10), distances])
+        print(f"Done with {iteration}")
+    print(f"Done with {coolingsc}")
 
-for res in results[0]:
-    plt.plot(xs, res, color = 'red', alpha = 0.2 )
-
-for res in results[1]:
-    plt.plot(xs, res, color = 'blue', alpha = 0.2 )
-
-for res in results[2]:
-    plt.plot(xs, res, color = 'green', alpha = 0.2 )
-
-plt.plot([],[], label="linear cooling", color = 'red')
-plt.plot([],[],  label="exponential cooling", color = 'blue')
-plt.plot([],[], label="logaritmic cooling", color = 'green')
-
-
-plt.legend()
-plt.show()
-
-# mean_results_lin = [np.mean(lijst) for lijst in results[0]]
-# mean_results_exp = [np.mean(lijst) for lijst in results[1]]
-# mean_results_log = [np.mean(lijst) for lijst in results[2]]
-# print("lin:", mean_results_lin)
-# print("exp:", mean_results_lin)
-# print("log:", mean_results_lin)
-
-# best_route, best_distance = simulated_annealing(initial_route)
-
-# for x in range(100):
-#     best_route, best_distance = simulated_annealing(initial_route)
+# write into csv
+df = pd.DataFrame(results, columns=["Cooling Schedule", "Iterations", "Mean Distance", "Standard Error", "Distances"])
+df.to_csv("exp_10times_c0_995_i100.csv")

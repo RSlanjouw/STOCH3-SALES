@@ -112,10 +112,10 @@ def random_improvement(route):
 coordinates = read_file()
 coordinates = np.array(coordinates)
 route = random_route(coordinates)
-# visualize the route in the grid
-plt.plot(route[:,1], route[:,2], 'o-')
-plt.show()
-print(distance_route(route))
+# # visualize the route in the grid
+# plt.plot(route[:,1], route[:,2], 'o-')
+# plt.show()
+# print(distance_route(route))
 
 # route = two_opt_improvement(route)
 # print(distance_route(route))
@@ -147,3 +147,6 @@ def get_optimum(route):
 # print(route_best)
 route_best = get_optimum(route)
 print(distance_route(route_best))
+
+# save optimal route a np int
+np.save("optimal_route_a280", route_best)
