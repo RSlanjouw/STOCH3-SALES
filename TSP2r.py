@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+
 def distance_two_nodes(node1, node2):
     x1, y1 = node1[1], node1[2]
     x2, y2 = node2[1], node2[2]
@@ -17,7 +18,7 @@ def distance_route(route):
     return total_distance
 
 
-def read_file(file="eil51.tsp.txt"):
+def read_file(file="a280.tsp.txt"):
     folder= "TSP-Configurations/"
     file = open(folder + file, "r")
     lines = file.readlines()
@@ -69,13 +70,15 @@ def two_opt_algorithm(route):
     # new_route += [new_route[0]]
     return new_route
     
-def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=10000, verbose=False, safed=False):
-    l = []
+def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations=10000):
+
     current_route = route
     current_distance = distance_route(route)
     best_route = current_route
     best_distance = current_distance
     temperature = initial_temp
+    final_temp = 1
+    results = []
 
     for iteration in range(iterations):
         # Generate a neighboring solution using 2-opt
@@ -90,20 +93,23 @@ def simulated_annealing(route, initial_temp=1000, cooling_rate=0.995, iterations
                 best_route = current_route
                 best_distance = current_distance
 
-        temperature *= cooling_rate
+        if coolingsc == "lin":
+            temperature = max(final_temp, temperature - cooling_rate * iteration)
+        if coolingsc == "exp":
+            temperature *= cooling_rate
+        if coolingsc == "log":
+            temperature = temperature / (1 + np.log(1 + iteration))
 
-        if safed:
-            if iteration % safed == 0:
-                l.append(best_distance)
+        
+        
 
-        if verbose:
-            if iteration % 1000 == 0 or iteration == iterations - 1:
-                print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
-                #plt.plot(best_route[:, 1], best_route[:, 2], 'o-', label='Best Route')
-                #plt.title(f"Iteration {iteration}")
-                #plt.pause(0.01)
+        if iteration % 1000 == 0 or iteration == iterations - 1:
+            print(f"Iteration {iteration}, Best Distance: {best_distance:.6f}, Temperature: {temperature:.6f}")
+            #plt.plot(best_route[:, 1], best_route[:, 2], 'o-', label='Best Route')
+            #plt.title(f"Iteration {iteration}")
+            #plt.pause(0.01)
     plt.show()
-    return best_route, best_distance,l
+    return best_route, best_distance
 
 # Main execution
 coordinates = read_file()
@@ -112,13 +118,5 @@ initial_route = random_route(coordinates)
 
 initial_route = random_route(coordinates)
 
-list = []
-
-for x in range(10):
-    best_route, best_distance,l = simulated_annealing(initial_route, safed=1000)
-    list.append(l)
-
-# save the list
-df = pd.DataFrame(list)
-df.to_csv("results.csv", index=False)
-
+for x in range(100):
+    best_route, best_distance = simulated_annealing(initial_route)
